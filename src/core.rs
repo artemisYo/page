@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use crate::combinators::{
     ParserAvoid, ParserChoice, ParserEnsure, ParserLabeled, ParserMaybe, ParserMsg, ParserPlus,
     ParserSeq, ParserStar,
@@ -55,6 +57,7 @@ impl<T: Identifier + std::fmt::Debug> std::fmt::Debug for ParseError<'_, T> {
     }
 }
 
+#[derive(PartialEq, Eq)]
 pub enum NonTerminal<'a, T: Identifier> {
     Node { identifier: T, children: Box<Self> },
     Congregate(Vec<Self>),
@@ -80,13 +83,17 @@ impl<'a> StrState<'a> {
             line: 0,
         }
     }
+    pub fn is_empty(&self) -> bool {
+        self.string.len() == self.head
+    }
     pub fn line_of(&self) -> &'a str {
-        &self.string[self.head
+        &self.string[self.string[..self.head].rfind('\n').unwrap_or(0)
             ..self.string[self.head..]
                 .find('\n')
                 .unwrap_or(self.string.len())]
     }
     pub fn advance(mut self, n: usize) -> Self {
+        assert!(self.string.len() > self.head, "Called method advance on StrState when it's already empty!");
         for c in self.string[self.head..self.head + n].chars() {
             if c == '\n' {
                 self.column = 0;
@@ -97,6 +104,13 @@ impl<'a> StrState<'a> {
         }
         self.head += n;
         return self;
+    }
+}
+impl<'a> Deref for StrState<'a> {
+    type Target = str;
+
+    fn deref(&self) -> &Self::Target {
+        &self.string[self.head..]
     }
 }
 
