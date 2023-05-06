@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use crate::core::{ErrorBacktrace, Identifier, NonTerminal, ParseError, Parser, StrState};
 
 pub fn pchar<T: Identifier>(c: char) -> Box<dyn Parser<T>> {
@@ -12,8 +14,8 @@ impl<T: Identifier> Parser<T> for ParserChar {
         &'a self,
         input: StrState<'a>,
     ) -> Result<(NonTerminal<'a, T>, StrState<'a>), (ParseError<'a, T>, StrState<'a>)> {
-        if input.string.starts_with(self.0) {
-            Ok((NonTerminal::Leaf(&input.string[0..1]), input.advance(1)))
+        if input.deref().starts_with(self.0) {
+            Ok((NonTerminal::Leaf(&input.string[input.head..][0..1]), input.advance(1)))
         } else {
             Err((
                 ParseError {
@@ -37,9 +39,9 @@ impl<T: Identifier> Parser<T> for ParserStr {
         &'a self,
         input: StrState<'a>,
     ) -> Result<(NonTerminal<'a, T>, StrState<'a>), (ParseError<'a, T>, StrState<'a>)> {
-        if input.string.starts_with(self.0) {
+        if input.deref().starts_with(self.0) {
             Ok((
-                NonTerminal::Leaf(&input.string[0..self.0.len()]),
+                NonTerminal::Leaf(&input.string[input.head..][0..self.0.len()]),
                 input.advance(self.0.len()),
             ))
         } else {
@@ -54,7 +56,6 @@ impl<T: Identifier> Parser<T> for ParserStr {
             ))
         }
     }
-
     fn to_dyn(self: Box<Self>) -> Box<dyn Parser<T>> {
         self
     }
@@ -71,9 +72,9 @@ impl<T: Identifier> Parser<T> for ParserPredicate {
         &'a self,
         input: StrState<'a>,
     ) -> Result<(NonTerminal<'a, T>, StrState<'a>), (ParseError<'a, T>, StrState<'a>)> {
-        let (p, l) = self.0(input.string);
+        let (p, l) = self.0(input.deref());
         if p {
-            Ok((NonTerminal::Leaf(&input.string[0..l]), input.advance(l)))
+            Ok((NonTerminal::Leaf(&input.string[input.head..][0..l]), input.advance(l)))
         } else {
             Err((
                 ParseError {
@@ -86,7 +87,6 @@ impl<T: Identifier> Parser<T> for ParserPredicate {
             ))
         }
     }
-
     fn to_dyn(self: Box<Self>) -> Box<dyn Parser<T>> {
         self
     }

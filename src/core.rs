@@ -1,4 +1,4 @@
-use std::ops::Deref;
+use std::{ops::Deref, fmt::Debug};
 
 use crate::combinators::{
     ParserAvoid, ParserChoice, ParserEnsure, ParserLabeled, ParserMaybe, ParserMsg, ParserPlus,
@@ -52,12 +52,12 @@ impl<T: Identifier + std::fmt::Debug> std::fmt::Debug for ParseError<'_, T> {
         write!(
             f,
             "Parsing error occured in string:\n{}\nIn parser:\n{:?}\nfollowing this backtrace:{:?}",
-            self.location, "todo!", /*self.expected /*ill think about it*/ */ self.backtrace
+            self.location,  self.expected /*ill think about it*/, self.backtrace
         )
     }
 }
 
-#[derive(PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum NonTerminal<'a, T: Identifier> {
     Node { identifier: T, children: Box<Self> },
     Congregate(Vec<Self>),
@@ -67,10 +67,10 @@ pub enum NonTerminal<'a, T: Identifier> {
     Empty,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct StrState<'a> {
     pub string: &'a str,
-    head: usize,
+    pub(crate) head: usize,
     column: usize,
     line: usize,
 }
@@ -87,10 +87,7 @@ impl<'a> StrState<'a> {
         self.string.len() == self.head
     }
     pub fn line_of(&self) -> &'a str {
-        &self.string[self.string[..self.head].rfind('\n').unwrap_or(0)
-            ..self.string[self.head..]
-                .find('\n')
-                .unwrap_or(self.string.len())]
+        self.string.lines().nth(self.line).unwrap()
     }
     pub fn advance(mut self, n: usize) -> Self {
         assert!(self.string.len() > self.head, "Called method advance on StrState when it's already empty!");
@@ -114,7 +111,7 @@ impl<'a> Deref for StrState<'a> {
     }
 }
 
-pub trait Parser<T: Identifier> {
+pub trait Parser<T: Identifier>: Debug {
     fn run<'a>(
         &'a self,
         input: StrState<'a>,

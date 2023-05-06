@@ -7,15 +7,18 @@
 // ParseError  :: Err  & String
 // ParseOutput :: Succ & String
 
-// TODO:
-//   1. Implement some basic parsers like char()
-//   2. Should trait Parser require Debug?
+use std::fmt::Debug;
 
 use crate::core::{ErrorBacktrace, Identifier, NonTerminal, ParseError, Parser, StrState};
 
 pub struct ParserMsg<T> {
     pub(crate) recipe: Box<dyn Parser<T>>,
     pub(crate) msg: &'static str,
+}
+impl<T: Identifier> Debug for ParserMsg<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self.recipe)
+    }
 }
 impl<T: Identifier> Parser<T> for ParserMsg<T> {
     fn to_dyn(self: Box<Self>) -> Box<dyn Parser<T>> {
@@ -44,6 +47,11 @@ impl<T: Identifier> Parser<T> for ParserMsg<T> {
 pub struct ParserLabeled<T> {
     pub(crate) recipe: Box<dyn Parser<T>>,
     pub(crate) label: T,
+}
+impl<T: Identifier> Debug for ParserLabeled<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self.recipe)
+    }
 }
 impl<T: Identifier> Parser<T> for ParserLabeled<T> {
     fn run<'a>(
@@ -80,6 +88,15 @@ impl<T: Identifier> Parser<T> for ParserLabeled<T> {
 pub struct ParserSeq<T> {
     pub(crate) recipe: Vec<Box<dyn Parser<T>>>,
 }
+impl<T: Identifier> Debug for ParserSeq<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Sequence of\n")?;
+        for p in self.recipe.iter() {
+            write!(f, "- {:?}", p)?;
+        }
+        Ok(())
+    }
+}
 impl<T: Identifier> Parser<T> for ParserSeq<T> {
     fn run<'a>(
         &'a self,
@@ -112,6 +129,15 @@ impl<T: Identifier> Parser<T> for ParserSeq<T> {
 pub struct ParserChoice<T> {
     pub(crate) recipe: Vec<Box<dyn Parser<T>>>,
 }
+impl<T: Identifier> Debug for ParserChoice<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Choice between\n")?;
+        for p in self.recipe.iter() {
+            write!(f, "- {:?}", p)?;
+        }
+        Ok(())
+    }
+}
 impl<T: Identifier> Parser<T> for ParserChoice<T> {
     fn run<'a>(
         &'a self,
@@ -143,6 +169,8 @@ impl<T: Identifier> Parser<T> for ParserChoice<T> {
         self
     }
 }
+
+// TODO: from here onwards, define Debug
 
 pub struct ParserPlus<T> {
     pub(crate) recipe: Box<dyn Parser<T>>,
