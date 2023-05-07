@@ -1,3 +1,4 @@
+use std::fmt::Debug;
 use std::ops::Deref;
 
 use crate::core::{ErrorBacktrace, Identifier, NonTerminal, ParseError, Parser, StrState};
@@ -6,6 +7,11 @@ pub fn pchar<T: Identifier>(c: char) -> Box<dyn Parser<T>> {
     Box::new(ParserChar(c))
 }
 pub struct ParserChar(char);
+impl Debug for ParserChar {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "parse character '{}'", self.0)
+    }
+}
 impl<T: Identifier> Parser<T> for ParserChar {
     fn to_dyn(self: Box<Self>) -> Box<dyn Parser<T>> {
         self
@@ -15,7 +21,10 @@ impl<T: Identifier> Parser<T> for ParserChar {
         input: StrState<'a>,
     ) -> Result<(NonTerminal<'a, T>, StrState<'a>), (ParseError<'a, T>, StrState<'a>)> {
         if input.deref().starts_with(self.0) {
-            Ok((NonTerminal::Leaf(&input.string[input.head..][0..1]), input.advance(1)))
+            Ok((
+                NonTerminal::Leaf(&input.string[input.head..][0..1]),
+                input.advance(1),
+            ))
         } else {
             Err((
                 ParseError {
@@ -34,6 +43,11 @@ pub fn pstr<T: Identifier>(s: &'static str) -> Box<dyn Parser<T>> {
     Box::new(ParserStr(s))
 }
 pub struct ParserStr(&'static str);
+impl Debug for ParserStr {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "parse string '{}'", self.0)
+    }
+}
 impl<T: Identifier> Parser<T> for ParserStr {
     fn run<'a>(
         &'a self,
@@ -67,6 +81,11 @@ pub fn ppredicate<T: Identifier, P: Fn(&str) -> (bool, usize) + 'static>(
     Box::new(ParserPredicate(Box::new(p)))
 }
 pub struct ParserPredicate(Box<dyn Fn(&str) -> (bool, usize)>);
+impl Debug for ParserPredicate {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "parse accoding to predicate")
+    }
+}
 impl<T: Identifier> Parser<T> for ParserPredicate {
     fn run<'a>(
         &'a self,
@@ -74,7 +93,10 @@ impl<T: Identifier> Parser<T> for ParserPredicate {
     ) -> Result<(NonTerminal<'a, T>, StrState<'a>), (ParseError<'a, T>, StrState<'a>)> {
         let (p, l) = self.0(input.deref());
         if p {
-            Ok((NonTerminal::Leaf(&input.string[input.head..][0..l]), input.advance(l)))
+            Ok((
+                NonTerminal::Leaf(&input.string[input.head..][0..l]),
+                input.advance(l),
+            ))
         } else {
             Err((
                 ParseError {

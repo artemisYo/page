@@ -175,6 +175,11 @@ impl<T: Identifier> Parser<T> for ParserChoice<T> {
 pub struct ParserPlus<T> {
     pub(crate) recipe: Box<dyn Parser<T>>,
 }
+impl<T: Identifier> Debug for ParserPlus<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?} at least once", self.recipe)
+    }
+}
 impl<T: Identifier> Parser<T> for ParserPlus<T> {
     fn run<'a>(
         &'a self,
@@ -203,6 +208,11 @@ impl<T: Identifier> Parser<T> for ParserPlus<T> {
 pub struct ParserStar<T> {
     pub(crate) recipe: Box<dyn Parser<T>>,
 }
+impl<T: Identifier> Debug for ParserStar<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?} as often as possible", self.recipe)
+    }
+}
 impl<T: Identifier> Parser<T> for ParserStar<T> {
     fn run<'a>(
         &'a self,
@@ -230,6 +240,11 @@ impl<T: Identifier> Parser<T> for ParserStar<T> {
 pub struct ParserMaybe<T> {
     pub(crate) recipe: Box<dyn Parser<T>>,
 }
+impl<T: Identifier> Debug for ParserMaybe<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?} or nothing", self.recipe)
+    }
+}
 impl<T: Identifier> Parser<T> for ParserMaybe<T> {
     fn run<'a>(
         &'a self,
@@ -251,6 +266,11 @@ impl<T: Identifier> Parser<T> for ParserMaybe<T> {
 pub struct ParserEnsure<T> {
     pub(crate) recipe: Box<dyn Parser<T>>,
 }
+impl<T: Identifier> Debug for ParserEnsure<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Ensure {:?}", self.recipe)
+    }
+}
 impl<T: Identifier> Parser<T> for ParserEnsure<T> {
     fn run<'a>(
         &'a self,
@@ -271,6 +291,11 @@ impl<T: Identifier> Parser<T> for ParserEnsure<T> {
 
 pub struct ParserAvoid<T> {
     pub(crate) recipe: Box<dyn Parser<T>>,
+}
+impl<T: Identifier> Debug for ParserAvoid<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Avoid {:?}", self.recipe)
+    }
 }
 impl<T: Identifier> Parser<T> for ParserAvoid<T> {
     fn run<'a>(
