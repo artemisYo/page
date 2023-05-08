@@ -1,8 +1,8 @@
-use std::{ops::Deref, fmt::Debug};
+use std::{fmt::Debug, ops::Deref};
 
 use crate::combinators::{
-    ParserAvoid, ParserChoice, ParserEnsure, ParserLabeled, ParserMaybe, ParserMsg, ParserPlus,
-    ParserSeq, ParserStar,
+    ParserAvoid, ParserCatenate, ParserChoice, ParserEnsure, ParserLabeled, ParserMaybe, ParserMsg,
+    ParserPlus, ParserSeq, ParserStar,
 };
 
 pub trait Identifier: Copy + 'static {}
@@ -52,7 +52,7 @@ impl<T: Identifier + std::fmt::Debug> std::fmt::Debug for ParseError<'_, T> {
         write!(
             f,
             "Parsing error occured in string:\n{}\nIn parser:\n{:?}\nfollowing this backtrace:{:?}",
-            self.location,  self.expected /*ill think about it*/, self.backtrace
+            self.location, self.expected, /*ill think about it*/ self.backtrace
         )
     }
 }
@@ -90,7 +90,10 @@ impl<'a> StrState<'a> {
         self.string.lines().nth(self.line).unwrap()
     }
     pub fn advance(mut self, n: usize) -> Self {
-        assert!(self.string.len() > self.head, "Called method advance on StrState when it's already empty!");
+        assert!(
+            self.string.len() > self.head,
+            "Called method advance on StrState when it's already empty!"
+        );
         for c in self.string[self.head..self.head + n].chars() {
             if c == '\n' {
                 self.column = 0;
@@ -161,6 +164,11 @@ pub trait Parser<T: Identifier>: Debug {
     }
     fn avoid(self: Box<Self>) -> Box<dyn Parser<T>> {
         Box::new(ParserAvoid {
+            recipe: self.to_dyn(),
+        })
+    }
+    fn catenate(self: Box<Self>) -> Box<dyn Parser<T>> {
+        Box::new(ParserCatenate {
             recipe: self.to_dyn(),
         })
     }

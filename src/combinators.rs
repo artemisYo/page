@@ -11,6 +11,32 @@ use std::fmt::Debug;
 
 use crate::core::{ErrorBacktrace, Identifier, NonTerminal, ParseError, Parser, StrState};
 
+pub struct ParserCatenate<T> {
+    pub(crate) recipe: Box<dyn Parser<T>>,
+}
+impl<T: Identifier> Debug for ParserCatenate<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "catenation of {:?}", self.recipe)
+    }
+}
+impl<T: Identifier> Parser<T> for ParserCatenate<T> {
+    fn to_dyn(self: Box<Self>) -> Box<dyn Parser<T>> {
+        self
+    }
+    fn run<'a>(
+        &'a self,
+        input: StrState<'a>,
+    ) -> Result<(NonTerminal<'a, T>, StrState<'a>), (ParseError<'a, T>, StrState<'a>)> {
+        match self.recipe.run(input) {
+            Ok((_, s)) => Ok((NonTerminal::Leaf(&input.string[input.head..s.head]), s)),
+            e => e,
+        }
+    }
+    fn catenate(self: Box<Self>) -> Box<dyn Parser<T>> {
+        self
+    }
+}
+
 pub struct ParserMsg<T> {
     pub(crate) recipe: Box<dyn Parser<T>>,
     pub(crate) msg: &'static str,

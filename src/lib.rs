@@ -53,6 +53,21 @@ mod tests {
         }
     }
     #[test]
+    fn pany_works() {
+        use std::ops::Deref;
+        #[derive(PartialEq, Eq, Clone, Copy, Debug)]
+        struct I;
+        impl core::Identifier for I {}
+        let p = primitives::pany::<I>();
+        let s = core::StrState::new("cukf k");
+        if let Ok((r, s)) = p.run(s) {
+            assert!(s.deref() == "ukf k", "s.deref() was: {}\n", s.deref());
+            assert!(r == core::NonTerminal::<I>::Leaf("c"));
+        } else {
+            panic!("Parser failed!");
+        }
+    }
+    #[test]
     fn star_passes() {
         use std::ops::Deref;
         #[derive(PartialEq, Eq, Clone, Copy, Debug)]
@@ -161,5 +176,27 @@ mod tests {
         } else {
             panic!("Parser failed!");
         }
+    }
+    #[test]
+    fn cat_passes() {
+        #[derive(PartialEq, Eq, Clone, Copy, Debug)]
+        struct I;
+        impl core::Identifier for I {}
+        let p = primitives::pchar::<I>('d')
+            .seq(primitives::pchar::<I>('a'))
+            .seq(primitives::pchar::<I>('m'))
+            .seq(primitives::pchar::<I>('n'))
+            .catenate();
+        let s = core::StrState::new("damn");
+        if let Ok((r, s)) = p.run(s) {
+            assert!(s.is_empty());
+            assert!(r == core::NonTerminal::<I>::Leaf("damn"));
+        } else {
+            panic!("Parser failed!");
+        }
+    }
+    #[test]
+    fn pexcept_works() {
+        todo!()
     }
 }
