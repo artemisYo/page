@@ -150,7 +150,7 @@ impl<T: Identifier> Parser<T> for ParserPredicate {
 pub fn pany<T: Identifier>() -> Box<dyn Parser<T>> {
     Box::new(ParserAny)
 }
-struct ParserAny;
+pub struct ParserAny;
 impl Debug for ParserAny {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "parse any character")
@@ -184,16 +184,18 @@ impl<T: Identifier> Parser<T> for ParserAny {
 
 pub fn pexcept<const X: usize, T: Identifier>(c: [char; X]) -> Box<dyn Parser<T>> {
     assert!(X > 0, "empty list for pexcept!");
-    Box::new(ParserExcept(c))
+    Box::new(ParserExcept { recipe: c })
 }
-struct ParserExcept<const X: usize>([char; X]);
+pub struct ParserExcept<const X: usize> {
+    recipe: [char; X],
+}
 impl<const X: usize> Debug for ParserExcept<X> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "parse any character except for ")?;
-        for c in self.0.iter().take(X - 1) {
+        for c in self.recipe.iter().take(X - 1) {
             write!(f, "{}, ", c)?;
         }
-        write!(f, "{}", self.0.last().unwrap())
+        write!(f, "{}", self.recipe.last().unwrap())
     }
 }
 impl<const X: usize, T: Identifier> Parser<T> for ParserExcept<X> {
@@ -216,8 +218,8 @@ impl<const X: usize, T: Identifier> Parser<T> for ParserExcept<X> {
             .string
             .chars()
             .nth(0)
-            .map(|c| !self.0.contains(&c))
-            .unwrap_or(false)
+            .map(|c| !self.recipe.contains(&c))
+            .unwrap()
         {
             return Ok((
                 NonTerminal::Leaf(&input.string[input.head..][0..1]),
@@ -236,5 +238,64 @@ impl<const X: usize, T: Identifier> Parser<T> for ParserExcept<X> {
     }
     fn to_dyn(self: Box<Self>) -> Box<dyn Parser<T>> {
         self
+    }
+}
+
+pub fn pin<const X: usize, T: Identifier>(c: [char; X]) -> Box<dyn Parser<T>> {
+    assert!(X > 0, "empty list for pin!");
+    Box::new(ParserOneOf { recipe: c })
+}
+pub struct ParserOneOf<const X: usize> {
+    recipe: [char; X],
+}
+impl<const X: usize> Debug for ParserOneOf<X> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write! {f, "parser any character part of "}?;
+        for c in self.recipe.iter().take(X - 1) {
+            write!(f, "{}, ", c)?;
+        }
+        write!(f, "{}", self.recipe.last().unwrap())
+    }
+}
+impl<const X: usize, T: Identifier> Parser<T> for ParserOneOf<X> {
+    fn to_dyn(self: Box<Self>) -> Box<dyn Parser<T>> {
+        self
+    }
+    fn run<'a>(
+        &'a self,
+        input: StrState<'a>,
+    ) -> Result<(NonTerminal<'a, T>, StrState<'a>), (ParseError<'a, T>, StrState<'a>)> {
+        if input.is_empty() {
+            return Err((
+                ParseError {
+                    location: input.line_of(),
+                    expected: self,
+                    backtrace: ErrorBacktrace::Empty,
+                    msg: Some("At end of input!"),
+                },
+                input,
+            ));
+        }
+        if input
+            .string
+            .chars()
+            .nth(0)
+            .map(|c| self.recipe.contains(&c))
+            .unwrap()
+        {
+            return Ok((
+                NonTerminal::Leaf(&input.string[input.head..][0..1]),
+                input.advance(1),
+            ));
+        }
+        Err((
+            ParseError {
+                location: input.line_of(),
+                expected: self,
+                backtrace: ErrorBacktrace::Empty,
+                msg: None,
+            },
+            input,
+        ))
     }
 }

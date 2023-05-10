@@ -2,6 +2,12 @@ pub mod combinators;
 pub mod core;
 pub mod primitives;
 
+// TODO:
+//  1. Change parsers to not index by bytes
+//     as that could cause panic when chars
+//     with codepoints > 127 are used
+//  2. Add memoization
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -197,6 +203,30 @@ mod tests {
     }
     #[test]
     fn pexcept_works() {
-        todo!()
+        #[derive(PartialEq, Eq, Clone, Copy, Debug)]
+        struct I;
+        impl core::Identifier for I {}
+        let p = primitives::pexcept::<4, I>(['a', 'b', 'd', 'e']);
+        let s = core::StrState::new("c");
+        if let Ok((r, s)) = p.run(s) {
+            assert!(s.is_empty());
+            assert!(r == core::NonTerminal::<I>::Leaf("c"));
+        } else {
+            panic!("Parser failed!");
+        }
+    }
+    #[test]
+    fn pin_works() {
+        #[derive(PartialEq, Eq, Clone, Copy, Debug)]
+        struct I;
+        impl core::Identifier for I {}
+        let p = primitives::pin::<4, I>(['a', 'b', 'c', 'd']);
+        let s = core::StrState::new("c");
+        if let Ok((r, s)) = p.run(s) {
+            assert!(s.is_empty());
+            assert!(r == core::NonTerminal::<I>::Leaf("c"));
+        } else {
+            panic!("Parser failed!");
+        }
     }
 }
