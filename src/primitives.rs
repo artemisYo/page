@@ -31,10 +31,11 @@ impl<T: Identifier> Parser<T> for ParserChar {
                 input,
             ));
         }
-        if input.deref().starts_with(self.0) {
+        let c = input.deref().chars().nth(0).unwrap();
+        if c == self.0 {
             Ok((
-                NonTerminal::Leaf(&input.string[input.head..][0..1]),
-                input.advance(1),
+                NonTerminal::Leaf(&input.string[input.head..][0..c.len_utf8()]),
+                input.advance(c.len_utf8()),
             ))
         } else {
             Err((
@@ -172,9 +173,10 @@ impl<T: Identifier> Parser<T> for ParserAny {
                 input,
             ));
         }
+        let c = input.deref().chars().nth(0).unwrap();
         return Ok((
-            NonTerminal::Leaf(&input.string[input.head..][0..1]),
-            input.advance(1),
+            NonTerminal::Leaf(&input.string[input.head..][0..c.len_utf8()]),
+            input.advance(c.len_utf8()),
         ));
     }
     fn to_dyn(self: Box<Self>) -> Box<dyn Parser<T>> {
@@ -221,9 +223,10 @@ impl<const X: usize, T: Identifier> Parser<T> for ParserExcept<X> {
             .map(|c| !self.recipe.contains(&c))
             .unwrap()
         {
+            let c = input.deref().chars().nth(0).unwrap().len_utf8();
             return Ok((
-                NonTerminal::Leaf(&input.string[input.head..][0..1]),
-                input.advance(1),
+                NonTerminal::Leaf(&input.string[input.head..][0..c]),
+                input.advance(c),
             ));
         }
         Err((
@@ -252,9 +255,9 @@ impl<const X: usize> Debug for ParserOneOf<X> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write! {f, "parser any character part of "}?;
         for c in self.recipe.iter().take(X - 1) {
-            write!(f, "{}, ", c)?;
+            write!(f, "{:?}, ", c)?;
         }
-        write!(f, "{}", self.recipe.last().unwrap())
+        write!(f, "{:?}", self.recipe.last().unwrap())
     }
 }
 impl<const X: usize, T: Identifier> Parser<T> for ParserOneOf<X> {
@@ -283,9 +286,10 @@ impl<const X: usize, T: Identifier> Parser<T> for ParserOneOf<X> {
             .map(|c| self.recipe.contains(&c))
             .unwrap()
         {
+            let c = input.deref().chars().nth(0).unwrap().len_utf8();
             return Ok((
-                NonTerminal::Leaf(&input.string[input.head..][0..1]),
-                input.advance(1),
+                NonTerminal::Leaf(&input.string[input.head..][0..c]),
+                input.advance(c),
             ));
         }
         Err((

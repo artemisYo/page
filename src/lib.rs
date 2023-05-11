@@ -3,13 +3,16 @@ pub mod core;
 pub mod primitives;
 
 // TODO:
-//  1. Change parsers to not index by bytes
-//     as that could cause panic when chars
-//     with codepoints > 127 are used
-//  2. Add memoization
+//  1. Add memoization
+//  2. Ignore result verb
+//  3. Fix linebreak formatting in Choice and check the other parsers
+//  4. Make error debug output not print linebreaks as linebreaks
+//  5. Better error location reports, not only lineof
 
 #[cfg(test)]
 mod tests {
+    use crate::core::StrState;
+
     use super::*;
 
     #[test]
@@ -59,7 +62,7 @@ mod tests {
         }
     }
     #[test]
-    fn pany_works() {
+    fn pany_passes() {
         use std::ops::Deref;
         #[derive(PartialEq, Eq, Clone, Copy, Debug)]
         struct I;
@@ -202,7 +205,7 @@ mod tests {
         }
     }
     #[test]
-    fn pexcept_works() {
+    fn pexcept_passes() {
         #[derive(PartialEq, Eq, Clone, Copy, Debug)]
         struct I;
         impl core::Identifier for I {}
@@ -216,7 +219,7 @@ mod tests {
         }
     }
     #[test]
-    fn pin_works() {
+    fn pin_passes() {
         #[derive(PartialEq, Eq, Clone, Copy, Debug)]
         struct I;
         impl core::Identifier for I {}
@@ -227,6 +230,42 @@ mod tests {
             assert!(r == core::NonTerminal::<I>::Leaf("c"));
         } else {
             panic!("Parser failed!");
+        }
+    }
+    #[test]
+    fn combination_passes() {
+        #[derive(PartialEq, Eq, Clone, Copy, Debug)]
+        enum I {
+            Num,
+            Op,
+            Add,
+            Sub,
+        }
+        impl core::Identifier for I {}
+        use primitives::*;
+        // TODO: Figure out why the whitespace ting only gets an empty string
+        let p = pin(['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'])
+            .atleast_once()
+            .catenate()
+            .label(I::Num)
+            .seq(pin([' ', '\n', '\t']))
+            .seq(
+                pchar('+')
+                    .label(I::Add)
+                    .or(pchar('-').label(I::Sub))
+                    .label(I::Op),
+            )
+            .seq(pin([' ', '\n', '\t']).multiple())
+            .seq(
+                pin(['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'])
+                    .atleast_once()
+                    .catenate()
+                    .label(I::Num),
+            );
+        let s = StrState::new("69 +   420");
+        match p.run(s) {
+            Ok((_, s)) => assert!(s.is_empty()),
+            Err((e, _)) => panic!("Parser Failed\n[Error]:\n{:?}", e),
         }
     }
 }
