@@ -116,9 +116,9 @@ pub struct ParserSeq<T> {
 }
 impl<T: Identifier> Debug for ParserSeq<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Sequence of\n")?;
+        write!(f, "Sequence of")?;
         for p in self.recipe.iter() {
-            write!(f, "- {:?}", p)?;
+            write!(f, "\n- {:?}", p)?;
         }
         Ok(())
     }
@@ -157,9 +157,9 @@ pub struct ParserChoice<T> {
 }
 impl<T: Identifier> Debug for ParserChoice<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Choice between\n")?;
+        write!(f, "Choice between")?;
         for p in self.recipe.iter() {
-            write!(f, "- {:?}", p)?;
+            write!(f, "\n- {:?}", p)?;
         }
         Ok(())
     }
@@ -195,8 +195,6 @@ impl<T: Identifier> Parser<T> for ParserChoice<T> {
         self
     }
 }
-
-// TODO: from here onwards, define Debug
 
 pub struct ParserPlus<T> {
     pub(crate) recipe: Box<dyn Parser<T>>,
@@ -373,5 +371,28 @@ impl<T: Identifier> Parser<T> for ParserLog<T> {
         let res = self.recipe.run(input);
         (self.logger)(&res);
         res
+    }
+}
+
+pub struct ParserIgnoreRes<T: Identifier> {
+    pub(crate) recipe: Box<dyn Parser<T>>,
+}
+impl<T: Identifier> Debug for ParserIgnoreRes<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self.recipe)
+    }
+}
+impl<T: Identifier> Parser<T> for ParserIgnoreRes<T> {
+    fn to_dyn(self: Box<Self>) -> Box<dyn Parser<T>> {
+        self
+    }
+    fn run<'a>(
+        &'a self,
+        input: StrState<'a>,
+    ) -> Result<(NonTerminal<'a, T>, StrState<'a>), (ParseError<'a, T>, StrState<'a>)> {
+        match self.recipe.run(input) {
+            Ok((n, s)) => Ok((NonTerminal::Empty, s)),
+            e => e,
+        }
     }
 }

@@ -4,11 +4,8 @@ pub mod primitives;
 
 // TODO:
 //  1. Add memoization
-//  2. Ignore result verb
-//  3. Fix linebreak formatting in Choice and check the other parsers
-//  4. Make error debug output not print linebreaks as linebreaks
-//  5. Differentiate between Debug print and Info print
-//  6. Better error location reports, not only lineof
+//  2. Add method that removes NonTerminal::Empty
+//  3. Better error location reports, not only lineof
 
 #[cfg(test)]
 mod tests {
@@ -252,7 +249,6 @@ mod tests {
         }
         impl core::Identifier for I {}
         use primitives::*;
-        // TODO: Figure out why the whitespace ting only gets an empty string
         let p = pin(['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'])
             .atleast_once()
             .catenate()

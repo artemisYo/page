@@ -1,34 +1,36 @@
-use std::{fmt::Debug, ops::Deref};
+use std::ops::Deref;
 
 use crate::combinators::{
-    ParserAvoid, ParserCatenate, ParserChoice, ParserEnsure, ParserLabeled, ParserLog, ParserMaybe,
-    ParserMsg, ParserPlus, ParserSeq, ParserStar,
+    ParserAvoid, ParserCatenate, ParserChoice, ParserEnsure, ParserIgnoreRes, ParserLabeled,
+    ParserLog, ParserMaybe, ParserMsg, ParserPlus, ParserSeq, ParserStar,
 };
 
 pub trait Identifier: Copy + 'static {}
 
+#[derive(Debug)]
 pub enum ErrorBacktrace<T: Identifier> {
     Node { identifier: T, next: Box<Self> },
     Empty,
 }
-impl<'a, T: Identifier + std::fmt::Debug> std::fmt::Debug for ErrorBacktrace<T> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl<T: Identifier + std::fmt::Debug> ErrorBacktrace<T> {
+    pub fn info(&self) -> String {
         match self {
-            Self::Node {
-                identifier: i,
-                next: n,
-            } => {
-                write!(f, "{:?}", i)?;
-                match n.as_ref() {
-                    Self::Empty => Ok(()),
-                    n => write!(f, "\n⤷\t{:?}", n),
-                }
+            Self::Node { identifier, next } => {
+                format!(
+                    "{:?}{}",
+                    identifier,
+                    match next.as_ref() {
+                        Self::Empty => "".to_owned(),
+                        n => format!("\n⤷\t{}", n.info()),
+                    }
+                )
             }
-            Self::Empty => Ok(()),
+            Self::Empty => "".to_owned(),
         }
     }
 }
 
+#[derive(Debug)]
 pub struct ParseError<'a, T: Identifier> {
     pub(crate) location: &'a str,
     pub(crate) expected: &'a dyn Parser<T>,
@@ -42,17 +44,18 @@ impl<T: Identifier> std::fmt::Display for ParseError<'_, T> {
             Some(s) => write!(f, "\nNote:\n{}", s),
             None => write!(
                 f,
-                "\nNote:\nSee this error's debug print for more information!"
+                "\nNote:\nSee this error's info print for more information!"
             ),
         }
     }
 }
-impl<T: Identifier + std::fmt::Debug> std::fmt::Debug for ParseError<'_, T> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "Parsing error occured in string:\n{}\nIn parser:\n{:?}\nfollowing this backtrace:{:?}",
-            self.location, self.expected, /*ill think about it*/ self.backtrace
+impl<T: Identifier + std::fmt::Debug> ParseError<'_, T> {
+    pub fn info(&self) -> String {
+        format!(
+            "Parsing error occured in string:\n{}\nIn parser:\n{:?}\nfollowing this backtrace:\n{}",
+            self.location,
+            self.expected,
+            self.backtrace.info()
         )
     }
 }
@@ -113,13 +116,13 @@ impl<'a> Deref for StrState<'a> {
         &self.string[self.head..]
     }
 }
-impl Debug for StrState<'_> {
+impl std::fmt::Debug for StrState<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:?}", self.deref())
     }
 }
 
-pub trait Parser<T: Identifier>: Debug {
+pub trait Parser<T: Identifier>: std::fmt::Debug {
     fn run<'a>(
         &'a self,
         input: StrState<'a>,
@@ -188,6 +191,11 @@ pub trait Parser<T: Identifier>: Debug {
         Box::new(ParserLog {
             recipe: self.to_dyn(),
             logger,
+        })
+    }
+    fn ignore(self: Box<Self>) -> Box<dyn Parser<T>> {
+        Box::new(ParserIgnoreRes {
+            recipe: self.to_dyn(),
         })
     }
 }

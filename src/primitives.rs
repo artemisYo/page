@@ -9,7 +9,7 @@ pub fn pchar<T: Identifier>(c: char) -> Box<dyn Parser<T>> {
 pub struct ParserChar(char);
 impl Debug for ParserChar {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "parse character '{}'", self.0)
+        write!(f, "parse character {:?}", self.0)
     }
 }
 impl<T: Identifier> Parser<T> for ParserChar {
@@ -57,7 +57,7 @@ pub fn pstr<T: Identifier>(s: &'static str) -> Box<dyn Parser<T>> {
 pub struct ParserStr(&'static str);
 impl Debug for ParserStr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "parse string '{}'", self.0)
+        write!(f, "parse string {:?}", self.0)
     }
 }
 impl<T: Identifier> Parser<T> for ParserStr {
@@ -193,11 +193,11 @@ pub struct ParserExcept<const X: usize> {
 }
 impl<const X: usize> Debug for ParserExcept<X> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "parse any character except for ")?;
-        for c in self.recipe.iter().take(X - 1) {
-            write!(f, "{}, ", c)?;
+        write!(f, "parse any character except for:")?;
+        for c in self.recipe.iter() {
+            write!(f, "\n- {:?}", c)?;
         }
-        write!(f, "{}", self.recipe.last().unwrap())
+        Ok(())
     }
 }
 impl<const X: usize, T: Identifier> Parser<T> for ParserExcept<X> {
@@ -217,7 +217,7 @@ impl<const X: usize, T: Identifier> Parser<T> for ParserExcept<X> {
             ));
         }
         if input
-            .string
+            .deref()
             .chars()
             .nth(0)
             .map(|c| !self.recipe.contains(&c))
@@ -253,11 +253,11 @@ pub struct ParserOneOf<const X: usize> {
 }
 impl<const X: usize> Debug for ParserOneOf<X> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write! {f, "parser any character part of "}?;
-        for c in self.recipe.iter().take(X - 1) {
-            write!(f, "{:?}, ", c)?;
+        write! {f, "parser any character part of:"}?;
+        for c in self.recipe.iter() {
+            write!(f, "\n- {:?}, ", c)?;
         }
-        write!(f, "{:?}", self.recipe.last().unwrap())
+        Ok(())
     }
 }
 impl<const X: usize, T: Identifier> Parser<T> for ParserOneOf<X> {
@@ -280,7 +280,7 @@ impl<const X: usize, T: Identifier> Parser<T> for ParserOneOf<X> {
             ));
         }
         if input
-            .string
+            .deref()
             .chars()
             .nth(0)
             .map(|c| self.recipe.contains(&c))
