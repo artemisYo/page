@@ -348,3 +348,30 @@ impl<T: Identifier> Parser<T> for ParserAvoid<T> {
         self
     }
 }
+
+pub struct ParserLog<T: Identifier> {
+    pub(crate) recipe: Box<dyn Parser<T>>,
+    pub(crate) logger: Box<
+        dyn Fn(
+            &Result<(NonTerminal<'_, T>, StrState<'_>), (ParseError<'_, T>, StrState<'_>)>,
+        ) -> (),
+    >,
+}
+impl<T: Identifier> Debug for ParserLog<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self.recipe)
+    }
+}
+impl<T: Identifier> Parser<T> for ParserLog<T> {
+    fn to_dyn(self: Box<Self>) -> Box<dyn Parser<T>> {
+        self
+    }
+    fn run<'a>(
+        &'a self,
+        input: StrState<'a>,
+    ) -> Result<(NonTerminal<'a, T>, StrState<'a>), (ParseError<'a, T>, StrState<'a>)> {
+        let res = self.recipe.run(input);
+        (self.logger)(&res);
+        res
+    }
+}

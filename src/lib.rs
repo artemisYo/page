@@ -7,7 +7,8 @@ pub mod primitives;
 //  2. Ignore result verb
 //  3. Fix linebreak formatting in Choice and check the other parsers
 //  4. Make error debug output not print linebreaks as linebreaks
-//  5. Better error location reports, not only lineof
+//  5. Differentiate between Debug print and Info print
+//  6. Better error location reports, not only lineof
 
 #[cfg(test)]
 mod tests {
@@ -234,6 +235,14 @@ mod tests {
     }
     #[test]
     fn combination_passes() {
+        fn log(
+            res: &Result<
+                (core::NonTerminal<'_, I>, StrState<'_>),
+                (core::ParseError<'_, I>, StrState<'_>),
+            >,
+        ) {
+            eprintln!("{:?}", res);
+        }
         #[derive(PartialEq, Eq, Clone, Copy, Debug)]
         enum I {
             Num,
@@ -248,19 +257,24 @@ mod tests {
             .atleast_once()
             .catenate()
             .label(I::Num)
+            .log(Box::new(log))
             .seq(pin([' ', '\n', '\t']))
+            .log(Box::new(log))
             .seq(
                 pchar('+')
                     .label(I::Add)
                     .or(pchar('-').label(I::Sub))
-                    .label(I::Op),
+                    .label(I::Op)
+                    .log(Box::new(log)),
             )
             .seq(pin([' ', '\n', '\t']).multiple())
+            .log(Box::new(log))
             .seq(
                 pin(['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'])
                     .atleast_once()
                     .catenate()
-                    .label(I::Num),
+                    .label(I::Num)
+                    .log(Box::new(log)),
             );
         let s = StrState::new("69 +   420");
         match p.run(s) {

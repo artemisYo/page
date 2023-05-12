@@ -1,8 +1,8 @@
 use std::{fmt::Debug, ops::Deref};
 
 use crate::combinators::{
-    ParserAvoid, ParserCatenate, ParserChoice, ParserEnsure, ParserLabeled, ParserMaybe, ParserMsg,
-    ParserPlus, ParserSeq, ParserStar,
+    ParserAvoid, ParserCatenate, ParserChoice, ParserEnsure, ParserLabeled, ParserLog, ParserMaybe,
+    ParserMsg, ParserPlus, ParserSeq, ParserStar,
 };
 
 pub trait Identifier: Copy + 'static {}
@@ -67,7 +67,7 @@ pub enum NonTerminal<'a, T: Identifier> {
     Empty,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy)]
 pub struct StrState<'a> {
     pub string: &'a str,
     pub(crate) head: usize,
@@ -111,6 +111,11 @@ impl<'a> Deref for StrState<'a> {
 
     fn deref(&self) -> &Self::Target {
         &self.string[self.head..]
+    }
+}
+impl Debug for StrState<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self.deref())
     }
 }
 
@@ -170,6 +175,19 @@ pub trait Parser<T: Identifier>: Debug {
     fn catenate(self: Box<Self>) -> Box<dyn Parser<T>> {
         Box::new(ParserCatenate {
             recipe: self.to_dyn(),
+        })
+    }
+    fn log(
+        self: Box<Self>,
+        logger: Box<
+            dyn Fn(
+                &Result<(NonTerminal<'_, T>, StrState<'_>), (ParseError<'_, T>, StrState<'_>)>,
+            ) -> (),
+        >,
+    ) -> Box<dyn Parser<T>> {
+        Box::new(ParserLog {
+            recipe: self.to_dyn(),
+            logger,
         })
     }
 }
