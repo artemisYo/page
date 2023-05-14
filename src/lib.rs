@@ -4,8 +4,6 @@ pub mod primitives;
 
 // TODO:
 //  1. Add memoization
-//  2. Add method that removes NonTerminal::Empty
-//  3. Better error location reports, not only lineof
 
 #[cfg(test)]
 mod tests {
@@ -163,7 +161,7 @@ mod tests {
                 ])
             );
         } else {
-            panic!("Error: {:?}", p.run(s).unwrap_err().0);
+            panic!("Error: {}", p.run(s).unwrap_err().0.info());
         }
     }
     #[test]

@@ -179,7 +179,7 @@ impl<T: Identifier> Parser<T> for ParserChoice<T> {
         }
         return Err((
             ParseError {
-                location: input.line_of(),
+                location: (input.line_of(), input.line, input.column),
                 expected: self,
                 backtrace: ErrorBacktrace::Empty,
                 msg: None,
@@ -329,7 +329,7 @@ impl<T: Identifier> Parser<T> for ParserAvoid<T> {
         match self.recipe.run(input) {
             Ok(_) => Err((
                 ParseError {
-                    location: input.line_of(),
+                    location: (input.line_of(), input.line, input.column),
                     expected: self.recipe.as_ref(),
                     backtrace: ErrorBacktrace::Empty,
                     msg: None,
@@ -391,7 +391,7 @@ impl<T: Identifier> Parser<T> for ParserIgnoreRes<T> {
         input: StrState<'a>,
     ) -> Result<(NonTerminal<'a, T>, StrState<'a>), (ParseError<'a, T>, StrState<'a>)> {
         match self.recipe.run(input) {
-            Ok((n, s)) => Ok((NonTerminal::Empty, s)),
+            Ok((_, s)) => Ok((NonTerminal::Empty, s)),
             e => e,
         }
     }

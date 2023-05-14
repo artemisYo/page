@@ -30,16 +30,26 @@ impl<T: Identifier + std::fmt::Debug> ErrorBacktrace<T> {
     }
 }
 
+fn point(s: &str, i: usize) -> String {
+    format!("{s}\n{}^{}", " ".repeat(i), "~".repeat(s.len() - i - 1))
+}
+
 #[derive(Debug)]
 pub struct ParseError<'a, T: Identifier> {
-    pub(crate) location: &'a str,
+    pub(crate) location: (&'a str, usize, usize),
     pub(crate) expected: &'a dyn Parser<T>,
     pub(crate) backtrace: ErrorBacktrace<T>,
     pub(crate) msg: Option<&'static str>,
 }
 impl<T: Identifier> std::fmt::Display for ParseError<'_, T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Parsing error occured in string:\n{}", self.location)?;
+        write!(
+            f,
+            "[{}:{}]\tParsing error occured in string:\n{}",
+            self.location.1,
+            self.location.2,
+            point(self.location.0, self.location.2)
+        )?;
         match self.msg {
             Some(s) => write!(f, "\nNote:\n{}", s),
             None => write!(
@@ -52,8 +62,10 @@ impl<T: Identifier> std::fmt::Display for ParseError<'_, T> {
 impl<T: Identifier + std::fmt::Debug> ParseError<'_, T> {
     pub fn info(&self) -> String {
         format!(
-            "Parsing error occured in string:\n{}\nIn parser:\n{:?}\nfollowing this backtrace:\n{}",
-            self.location,
+            "[{}:{}]\tParsing error occured in string:\n{}\nIn parser:\n{:?}\nfollowing this backtrace:\n{}",
+            self.location.1,
+            self.location.2,
+            point(self.location.0, self.location.2),
             self.expected,
             self.backtrace.info()
         )
@@ -69,13 +81,41 @@ pub enum NonTerminal<'a, T: Identifier> {
     Leaf(&'a str),
     Empty,
 }
+impl<'a, T: Identifier> NonTerminal<'a, T> {
+    pub fn clean(self) -> Self {
+        match self {
+            Self::Node {
+                identifier,
+                children,
+            } => Self::Node {
+                identifier,
+                children: Box::new(children.clean()),
+            },
+            Self::Congregate(v) => {
+                let mut i = vec![];
+                for c in v.into_iter().map(|n| n.clean()) {
+                    match c {
+                        Self::Empty => {}
+                        _ => i.push(c),
+                    }
+                }
+                if i.is_empty() {
+                    Self::Empty
+                } else {
+                    Self::Congregate(i)
+                }
+            }
+            e => e,
+        }
+    }
+}
 
 #[derive(Clone, Copy)]
 pub struct StrState<'a> {
     pub string: &'a str,
     pub(crate) head: usize,
-    column: usize,
-    line: usize,
+    pub(crate) column: usize,
+    pub(crate) line: usize,
 }
 impl<'a> StrState<'a> {
     pub fn new(s: &'a str) -> Self {

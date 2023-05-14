@@ -23,7 +23,7 @@ impl<T: Identifier> Parser<T> for ParserChar {
         if input.is_empty() {
             return Err((
                 ParseError {
-                    location: input.line_of(),
+                    location: (input.line_of(), input.line, input.column),
                     expected: self,
                     backtrace: ErrorBacktrace::Empty,
                     msg: Some("At end of input!"),
@@ -40,7 +40,7 @@ impl<T: Identifier> Parser<T> for ParserChar {
         } else {
             Err((
                 ParseError {
-                    location: input.line_of(),
+                    location: (input.line_of(), input.line, input.column),
                     expected: self,
                     backtrace: ErrorBacktrace::Empty,
                     msg: None,
@@ -68,7 +68,7 @@ impl<T: Identifier> Parser<T> for ParserStr {
         if input.is_empty() {
             return Err((
                 ParseError {
-                    location: input.line_of(),
+                    location: (input.line_of(), input.line, input.column),
                     expected: self,
                     backtrace: ErrorBacktrace::Empty,
                     msg: Some("At end of input!"),
@@ -84,7 +84,7 @@ impl<T: Identifier> Parser<T> for ParserStr {
         } else {
             Err((
                 ParseError {
-                    location: input.line_of(),
+                    location: (input.line_of(), input.line, input.column),
                     expected: self,
                     backtrace: ErrorBacktrace::Empty,
                     msg: None,
@@ -117,7 +117,7 @@ impl<T: Identifier> Parser<T> for ParserPredicate {
         if input.is_empty() {
             return Err((
                 ParseError {
-                    location: input.line_of(),
+                    location: (input.line_of(), input.line, input.column),
                     expected: self,
                     backtrace: ErrorBacktrace::Empty,
                     msg: Some("At end of input!"),
@@ -134,7 +134,7 @@ impl<T: Identifier> Parser<T> for ParserPredicate {
         } else {
             Err((
                 ParseError {
-                    location: input.line_of(),
+                    location: (input.line_of(), input.line, input.column),
                     expected: self,
                     backtrace: ErrorBacktrace::Empty,
                     msg: None,
@@ -165,7 +165,7 @@ impl<T: Identifier> Parser<T> for ParserAny {
         if input.is_empty() {
             return Err((
                 ParseError {
-                    location: input.line_of(),
+                    location: (input.line_of(), input.line, input.column),
                     expected: self,
                     backtrace: ErrorBacktrace::Empty,
                     msg: Some("At end of input!"),
@@ -208,7 +208,7 @@ impl<const X: usize, T: Identifier> Parser<T> for ParserExcept<X> {
         if input.is_empty() {
             return Err((
                 ParseError {
-                    location: input.line_of(),
+                    location: (input.line_of(), input.line, input.column),
                     expected: self,
                     backtrace: ErrorBacktrace::Empty,
                     msg: Some("At end of input!"),
@@ -231,7 +231,7 @@ impl<const X: usize, T: Identifier> Parser<T> for ParserExcept<X> {
         }
         Err((
             ParseError {
-                location: input.line_of(),
+                location: (input.line_of(), input.line, input.column),
                 expected: self,
                 backtrace: ErrorBacktrace::Empty,
                 msg: None,
@@ -271,7 +271,7 @@ impl<const X: usize, T: Identifier> Parser<T> for ParserOneOf<X> {
         if input.is_empty() {
             return Err((
                 ParseError {
-                    location: input.line_of(),
+                    location: (input.line_of(), input.line, input.column),
                     expected: self,
                     backtrace: ErrorBacktrace::Empty,
                     msg: Some("At end of input!"),
@@ -294,7 +294,7 @@ impl<const X: usize, T: Identifier> Parser<T> for ParserOneOf<X> {
         }
         Err((
             ParseError {
-                location: input.line_of(),
+                location: (input.line_of(), input.line, input.column),
                 expected: self,
                 backtrace: ErrorBacktrace::Empty,
                 msg: None,
